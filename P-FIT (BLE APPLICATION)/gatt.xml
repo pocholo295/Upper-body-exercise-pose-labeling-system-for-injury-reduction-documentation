@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration>
+
+    <service uuid="1800">
+        <description>Generic Access Profile</description>
+
+        <characteristic uuid="2a00">
+            <properties read="true" const="true" />
+            <value>P-Fit</value>
+        </characteristic>
+
+        <characteristic uuid="2a01">
+            <properties read="true" const="true" />
+            <value type="hex">0000</value>
+        </characteristic>
+    </service>
+	
+   <service type="primary" uuid="180A" id="manufacturer">   
+        <characteristic uuid="2A29">
+            <properties read="true" const="true" />
+            <value>Bluegiga</value>
+        </characteristic>
+    </service>
+
+   
+   <service uuid = "020e47b6-bcff-4332-a14d-ce883b858e68" advertise="true">
+     <description>Check</description>
+
+		  <characteristic uuid="c91bb144-3d87-4e85-82ba-0c18826fb2a9" id="xgatt_tot_accel">
+            <description>Total written in setup </description>
+            <properties read = "true" notify = "true" />
+            <value length="1" />
+        </characteristic>   
+		
+		 <characteristic uuid="3adb28a9-e1f5-4a74-b990-4b1232f038ef" id="xgatt_tot_gyro">
+            <description>Total written in setup </description>
+            <properties read = "true" notify = "true" />
+            <value length="1" />
+        </characteristic>   
+		
+		
+		 <characteristic uuid="0fe93a6d-a6e2-426e-b9eb-4616a747d972" id="xgatt_accel_who">
+            <description>Accel Who </description>
+            <properties read = "true" notify = "true" />
+            <value length="1" />
+        </characteristic>   
+		
+		<characteristic uuid="e7107730-e4b2-45f0-96c7-7b8e762cbd7f" id="xgatt_gyro_who">
+            <description>Gyro Who </description>
+            <properties read = "true" notify = "true" />
+            <value length="1" />
+        </characteristic>   
+		
+		
+		
+     </service>
+	
+    <service uuid="181C" advertise="true">
+       <description>Data</description>
+    
+          <characteristic uuid="e34b26a3-6c1b-497d-ae40-158f92732b69" id="xgatt_wa">
+            <description>Wrist Accel Raw</description>
+            <properties read = "true" notify = "true" />
+            <value length="6" type ="hex" />
+        </characteristic>
+ 
+          <characteristic uuid="c481ad14-0f77-46dd-b4f2-9727d088e9d9" id="xgatt_wg">
+            <description>Wrist Gyro Raw</description>
+            <properties read = "true" notify = "true" />
+            <value length="6" type ="hex" />
+        </characteristic>
+		
+		
+	     <characteristic uuid="4a8d661e-069c-4f40-ad2c-fd21e1152beb" id="xgatt_shoulder">
+           <description>Gyro Raw</description>
+           <properties read = "true" notify = "true" />
+            <value length="6" type ="hex" />
+        </characteristic>      
+		
+	     <characteristic uuid="4e891122-821e-41ba-8526-f4d49498398c" id="xgatt_flex">
+           <description>Flex Raw</description>
+           <properties read = "true" notify = "true" />
+            <value length="1" type ="hex" />
+        </characteristic>  	
+		
+		<characteristic uuid="83017413-9312-4972-93de-9505bb56d2d2" id="xgatt_command">
+		 <description>Command</description>
+		<properties write_no_response="true" />
+        <value length="1" />
+		</characteristic>
+		 
+		
+        
+    </service>
+    
+</configuration>

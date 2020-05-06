@@ -1,0 +1,9 @@
+xgatt_tot_accel 11
+xgatt_tot_gyro 15
+xgatt_accel_who 19
+xgatt_gyro_who 23
+xgatt_wa 28
+xgatt_wg 32
+xgatt_shoulder 36
+xgatt_flex 40
+xgatt_command 44

@@ -1,0 +1,232 @@
+# API:
+# call hardware_i2c_write(address,stop,data_len, data_data)(written)
+# call hardware_i2c_read(address,stop,length)(result,data_len,data_data)
+# call attributes_write(handle, offset, value_len, value_data)(result)
+
+dim written
+dim result
+dim port
+dim data
+dim data_len
+dim tot
+dim timer
+dim totA
+dim totG
+dim flex
+dim check
+const WHO_AM_I  = $0F #WHO_AM_I Register address
+const v4Gyro    = $D4 #0x6A << 1 -> Pololu gyro slave address  D4 IS FOR LOW
+const v4Accel   = $3C #0x1E << 1 -> Pololu accel slave address 3C IS FOR LOW
+const v4gyroH   = $D6 #0X6B << 1 -> Pololu Gyro High slave address 
+const SparkL    = $D0 #0X68 << 1 -> Sparkfun gyro slave address low
+
+
+  #------------------------------------------------*****************************------------------------------------------------------------------------------------------------------------------
+ #For Gyroscope module configure the CTR_REG's as followed: (Slave address's: 0x68,0x69,0x6B) -> left shifted 1==(0xD0(208), 0xD2(210), 0xD6(214))
+ #CTR_REG1 = 0b00001111 -> Normal mode. 100Hz and activating x,y and z-axis -> 0x0F
+ #CTR_REG2 = 0x00 -> Default mode
+ #CTR_REG3 = 0x00 -> Deffault mode
+ #CTR_REG4 = 0x80 -> BDU = 1 (Update mode -> output registers not updated until MSB and LSB reading), 250 dps ->0x90 for 500dps
+ #CTR_REG5 = 0x00 -> Default mode
+
+ #To disable gyro, write to CTR_REG_1 0x00 -> Power down mode + disable Zen-Xen
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------******************************------------------------------------------------------------------------------------------------------------------
+#For accelerometer module configure the CTR_REG's as followed: (Slave address 1D, left shifted 1 = 0x3A(58))
+#CTR_REG_0 = 0x00 -> Default mode
+#CTR_REG_1 = 0b01101111 -> 100HHZ, enable AX -> AZ, BDU = 1 -> 0x6F
+#CTR_REG_2 = 0x00 -> 2g mode , 0x08 -> 4g Mode
+#CTR_REG_3 = 0x00 -> Default mode
+#CTR_REG_4 = 0x00 -> Default mode
+#CTR_REG_5 = 0b00011000 -> Disable temperature sensor, do not use Magnetic data -> 0x18
+#CTR_REG_6 = 0x00 -> Default value
+#CTR_REG_7 = 0b00000011 -> Magnetic sensor power-down mode! -> 0x03
+#To power down accel write to CTR_REG_1 0x00 -> (Disables the x-z axis and puts device in power down mode)
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+dim a_who
+dim g_who
+procedure setup()
+	totA = 0
+	totG = 0
+	  call hardware_i2c_write(v4Accel,1,2,"\x1F\x00")(written)#CTR_REG0
+	  totA = totA + written
+	  call hardware_i2c_write(v4Accel,1,2,"\x20\x6F")(written)#CTR_REG1
+	  totA = totA + written
+	  call hardware_i2c_write(v4Accel,1,2,"\x21\x08")(written)#CTR_REG2
+	  totA = totA + written
+	  call hardware_i2c_write(v4Accel,1,2,"\x22\x00")(written)#CTR_REG3
+	  totA = totA + written
+	  call hardware_i2c_write(v4Accel,1,2,"\x23\x00")(written)#CTR_REG4
+	  totA = totA + written	
+	  call hardware_i2c_write(v4Accel,1,2,"\x24\x18")(written)#CTR_REG5
+	  totA = totA + written
+	  call hardware_i2c_write(v4Accel,1,2,"\x25\x00")(written)#CTR_REG6
+	  totA = totA + written
+	  call hardware_i2c_write(v4Accel,1,2,"\x26\x03")(written)#CTR_REG7
+	  totA = totA + written
+	  call hardware_i2c_write(v4Gyro,1,2,"\x20\x0F")(written)#CTR_REG1
+	  totG = totG + written
+	  call hardware_i2c_write(v4Gyro,1,2,"\x21\x00")(written)#CTR_REG2
+	  totG = totG + written
+	  call hardware_i2c_write(v4Gyro,1,2,"\x22\x00")(written)#CTR_REG3
+	  totG = totG + written
+	  call hardware_i2c_write(v4Gyro,1,2,"\x23\x90")(written)#CTR_REG4
+	  totG = totG + written	
+	  call hardware_i2c_write(v4Gyro,1,2,"\x24\x00")(written)#CTR_REG5
+	  totG = totG + written
+	 #---Use this code when setting up the PCB-------------------------
+	  call hardware_i2c_write(v4gyroH,1,2,"\x20\x0F")(written)#CTR_REG1
+	  totG = totG + written
+	  call hardware_i2c_write(v4gyroH,1,2,"\x21\x00")(written)#CTR_REG2
+	  totG = totG + written
+	  call hardware_i2c_write(v4gyroH,1,2,"\x22\x00")(written)#CTR_REG3
+	  totG = totG + written
+	  call hardware_i2c_write(v4gyroH,1,2,"\x23\x90")(written)#CTR_REG4
+	  totG = totG + written	
+	  call hardware_i2c_write(v4gyroH,1,2,"\x24\x00")(written)#CTR_REG5
+	  totG = totG + written	
+	 #---Use this code when setting up the prototype board--------------
+	 #call hardware_i2c_write(SparkL,1,2,"\x20\x0F")(written)#CTR_REG1
+	 # totG = totG + written
+	  #call hardware_i2c_write(SparkL,1,2,"\x21\x00")(written)#CTR_REG2
+	  #totG = totG + written
+	  #call hardware_i2c_write(SparkL,1,2,"\x22\x00")(written)#CTR_REG3
+	  #totG = totG + written
+	  #call hardware_i2c_write(SparkL,1,2,"\x23\x80")(written)#CTR_REG4
+	  #totG = totG + written	
+	  #call hardware_i2c_write(SparkL,1,2,"\x24\x00")(written)#CTR_REG5
+	 # totG = totG + written	
+	  
+   call attributes_write(xgatt_tot_gyro, 0, 1, totG) #Sending the number of 
+	 
+   call attributes_write(xgatt_tot_accel, 0, 1, totA) #Sending the number of correct set up
+   
+   call hardware_i2c_write(v4Gyro,0,1,"\x0F")(written)
+   call hardware_i2c_read(v4Gyro,1,1)(result,data_len,g_who)#Who am I register
+   
+   call attributes_write(xgatt_gyro_who, 0, 1, g_who) #Sending who am I register
+   
+   call hardware_i2c_write(v4Accel,0,1,"\x0F")(written)
+   call hardware_i2c_read(v4Accel,1,1)(result,data_len,a_who)#Who am I register
+   
+   call attributes_write(xgatt_accel_who, 0, 1, a_who) #Sending who am I register
+  
+end
+    
+# Buffers to hold the 6 bytes of acceleration, and rotation data from 3 sensors
+dim sensor(6)
+dim sensor2(6)
+dim sensor3(6)
+
+procedure send_data()
+	# Read the acceleration X, Y, Z (high, then low bytes) registers and write to the GATT
+	# Read gyro X,Y,Z (high, then low bytes) registers and write to GATT
+	call hardware_i2c_write(v4Accel,0,1,"\x29")(written)
+	call hardware_i2c_read(v4Accel,0,1)(result,data_len,sensor(0))#Xhigh
+	call hardware_i2c_write(v4Accel,0,1,"\x28")(written)
+	call hardware_i2c_read(v4Accel,0,1)(result,data_len,sensor(1))#Xlow
+	call hardware_i2c_write(v4Accel,0,1,"\x2B")(written)#Yhigh
+	call hardware_i2c_read(v4Accel,0,1)(result,data_len,sensor(2))#Yhigh
+	call hardware_i2c_write(v4Accel,0,1,"\x2A")(written)
+	call hardware_i2c_read(v4Accel,0,1)(result,data_len,sensor(3))#Ylow
+	call hardware_i2c_write(v4Accel,0,1,"\x2D")(written)#Zhigh
+	call hardware_i2c_read(v4Accel,0,1)(result,data_len,sensor(4))#Zhigh
+	call hardware_i2c_write(v4Accel,0,1,"\x2C")(written)#Zlow
+	call hardware_i2c_read(v4Accel,1,1)(result,data_len,sensor(5))#Zlow
+	# Write acceleration to GATT
+	# Read gyro X,Y,Z (high, then low bytes) registers and write to GATT
+	call hardware_i2c_write(v4Gyro,0,1,"\x29")(written)
+	call hardware_i2c_read(v4Gyro,0,1)(result,data_len,sensor2(0))#Xhigh
+	call hardware_i2c_write(v4Gyro,0,1,"\x28")(written)
+	call hardware_i2c_read(v4Gyro,0,1)(result,data_len,sensor2(1))#Xlow
+	call hardware_i2c_write(v4Gyro,0,1,"\x2B")(written)#Yhigh
+	call hardware_i2c_read(v4Gyro,0,1)(result,data_len,sensor2(2))#Yhigh
+	call hardware_i2c_write(v4Gyro,0,1,"\x2A")(written)
+	call hardware_i2c_read(v4Gyro,0,1)(result,data_len,sensor2(3))#Ylow
+	call hardware_i2c_write(v4Gyro,0,1,"\x2D")(written)#Zhigh
+	call hardware_i2c_read(v4Gyro,0,1)(result,data_len,sensor2(4))#Zhigh
+	call hardware_i2c_write(v4Gyro,0,1,"\x2C")(written)#Zlow
+	call hardware_i2c_read(v4Gyro,1,1)(result,data_len,sensor2(5))#Zlow
+	# Read gyro X,Y,Z (high, then low bytes) registers and write to GATT
+	#-----Use this code when using the PCB------------------------------------------------
+	call hardware_i2c_write(v4gyroH,0,1,"\x29")(written)
+	call hardware_i2c_read(v4gyroH,0,1)(result,data_len,sensor3(0))#Xhigh
+	call hardware_i2c_write(v4gyroH,0,1,"\x28")(written)
+	call hardware_i2c_read(v4gyroH,0,1)(result,data_len,sensor3(1))#Xlow
+	call hardware_i2c_write(v4gyroH,0,1,"\x2B")(written)#Yhigh
+	call hardware_i2c_read(v4gyroH,0,1)(result,data_len,sensor3(2))
+	call hardware_i2c_write(v4gyroH,0,1,"\x2A")(written)
+	call hardware_i2c_read(v4gyroH,0,1)(result,data_len,sensor3(3))#Ylow
+	call hardware_i2c_write(v4gyroH,0,1,"\x2D")(written)#Zhigh
+	call hardware_i2c_read(v4gyroH,0,1)(result,data_len,sensor3(4))
+	call hardware_i2c_write(v4gyroH,0,1,"\x2C")(written)#Zlow
+	call hardware_i2c_read(v4gyroH,1,1)(result,data_len,sensor3(5))
+	#-------Use this code when using the prototype board-----------------------------------
+	#call hardware_i2c_write(SparkL,0,1,"\x29")(written)
+	#call hardware_i2c_read(SparkL,0,1)(result,data_len,sensor3(0))#Xhigh
+	#call hardware_i2c_write(SparkL,0,1,"\x28")(written)
+	#call hardware_i2c_read(SparkL,0,1)(result,data_len,sensor3(1))#Xlow
+	#call hardware_i2c_write(SparkL,0,1,"\x2B")(written)#Yhigh
+	#call hardware_i2c_read(SparkL,0,1)(result,data_len,sensor3(2))
+	#call hardware_i2c_write(SparkL,0,1,"\x2A")(written)
+	#call hardware_i2c_read(SparkL,0,1)(result,data_len,sensor3(3))#Ylow
+	#call hardware_i2c_write(SparkL,0,1,"\x2D")(written)#Zhigh
+	#call hardware_i2c_read(SparkL,0,1)(result,data_len,sensor3(4))
+	#call hardware_i2c_write(SparkL,0,1,"\x2C")(written)#Zlow
+	#call hardware_i2c_read(SparkL,1,1)(result,data_len,sensor3(5))
+	# Write Accel to GATT
+	call attributes_write(xgatt_wa, 0, 6, sensor(0:6))
+	# Write Gyro to GATT	
+    call attributes_write(xgatt_wg, 0, 6, sensor2(0:6))
+	# Write Gyro to GATT
+	call attributes_write(xgatt_shoulder, 0, 6, sensor3(0:6))
+	
+    #Call ADC Flex reading conversion
+	#call hardware_adc_read(0,3,2) #Input AIN0,  12 bits (Decimation 3), AVVD pin as reference voltage (2)
+
+end
+#event hardware_adc_result(input,value)
+   # flex = value >> 4  #Shifting result into 8 MSB bits 
+    #call attributes_write(xgatt_flex,0,1,flex)
+
+#end
+
+# Boot event listener
+event system_boot(major ,minor ,patch ,build ,ll_version ,protocol_version ,hw)
+    # Initialize as 'disconnected'  
+    call gap_set_mode(gap_general_discoverable, gap_undirected_connectable)# Start advertisement
+    #Procedure to set up sensor parameters 
+	call hardware_set_soft_timer(400, 1, 1)#Start timer to start set up
+end
+
+
+ # Connection event listener
+event connection_status(connection, flags, address, address_type, conn_interval, timeout, latency, bonding)
+	#call hardware_set_soft_timer(1310, 0, 0)#Start timer, repeat every 40ms
+end
+
+
+event attributes_value(connection, reason, handle, offset, value_len, value_data)
+    data = value_data(0:value_len)
+    if data>48 then 
+	 call hardware_set_soft_timer(1310, 0, 0)#Start timer, repeat every 40ms
+	else 
+	 call hardware_set_soft_timer(0, 0, 0)#Stop timer
+	end if
+end
+	
+# Disconnection event listener
+event connection_disconnected(connection, reason)
+    call gap_set_mode(gap_general_discoverable, gap_undirected_connectable)	# Start advertisement
+	call hardware_set_soft_timer(0, 0, 0)#Stop timer
+end
+
+#Timer event listener
+event hardware_soft_timer(handle)
+  if handle = 0 then
+	 call send_data()
+  else
+      call setup()
+  end if 
+end 
